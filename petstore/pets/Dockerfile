@@ -3,6 +3,6 @@ RUN apk --no-cache add curl
 CMD ./wait-for -t 60 $CONSUL_HOST:$CONSUL_PORT -- \
     ./wait-for -t 60 $MONGO_HOST:$MONGO_PORT -- \
         echo "All dependencies ready. Starting application..." && \
-        java ${JAVA_OPTS} -jar pets-all.jar
+        java ${JAVA_OPTS}  -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044 -jar pets-all.jar
 COPY build/libs/*-all.jar pets-all.jar
 COPY wait-for wait-for

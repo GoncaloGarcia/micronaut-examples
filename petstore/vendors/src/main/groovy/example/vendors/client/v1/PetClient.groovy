@@ -17,6 +17,8 @@ package example.vendors.client.v1
 
 import example.api.v1.Pet
 import example.api.v1.PetOperations
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.annotation.Header
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.micronaut.http.client.annotation.Client
@@ -29,8 +31,8 @@ import io.micronaut.http.client.annotation.Client
 interface PetClient extends PetOperations<Pet> {
 
     @Override
-    Single<List<Pet>> byVendor(String name)
+    Single<List<Pet>> byVendor(String name, @Header("uber-trace-id") String traceid)
 
     @Override
-    Maybe<Pet> find(String slug)
+    Maybe<Pet> find(String slug, @Header("uber-trace-id") String traceid)
 }

@@ -5,6 +5,6 @@ CMD ./wait-for -t 60 $CONSUL_HOST:$CONSUL_PORT -- \
     ./wait-for -t 60 pets:8080 -- \
     ./wait-for -t 60 storefront:8080 -- \
         echo "All dependencies ready. Starting application..." && \
-        java ${JAVA_OPTS} -jar offers-all.jar
+        java ${JAVA_OPTS} -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044 -jar offers-all.jar
 COPY build/libs/*-all.jar offers-all.jar
 COPY wait-for wait-for

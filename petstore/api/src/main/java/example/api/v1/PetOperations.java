@@ -15,6 +15,9 @@
  */
 package example.api.v1;
 
+import io.jaegertracing.internal.utils.Http;
+import io.micronaut.http.HttpHeaders;
+import io.micronaut.http.annotation.Header;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.micronaut.http.annotation.Body;
@@ -33,17 +36,17 @@ import java.util.List;
 public interface PetOperations<T extends Pet> {
 
     @Get("/")
-    Single<List<T>> list();
+    Single<List<T>> list(@Header("uber-trace-id") String traceId);
 
     @Get("/random")
-    Maybe<T> random();
+    Maybe<T> random(@Header("uber-trace-id") String traceid);
 
     @Get("/vendor/{name}")
-    Single<List<T>> byVendor(String name);
+    Single<List<T>> byVendor(String name, @Header("uber-trace-id") String traceId);
 
     @Get("/{slug}")
-    Maybe<T> find(String slug);
+    Maybe<T> find(String slug, @Header("uber-trace-id") String traceId);
 
     @Post("/")
-    Single<T> save(@Valid @Body T pet);
+    Single<T> save(@Valid @Body T pet, @Header("uber-trace-id") String traceId);
 }

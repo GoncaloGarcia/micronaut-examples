@@ -15,12 +15,17 @@
  */
 package example.comments
 
+import com.feedzai.commons.tracing.engine.JaegerTracingEngine
+import com.feedzai.commons.tracing.engine.TraceUtil
 import example.api.v1.CommentOperations
 import groovy.transform.CompileStatic
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Header
 
 import javax.validation.constraints.NotBlank
+import java.time.Duration
+import java.util.function.Supplier
 
 /**
  * @author graemerocher
@@ -34,16 +39,18 @@ class CommentController implements CommentOperations<Comment> {
 
     CommentController(CommentRepository commentRepository) {
         this.commentRepository = commentRepository
+        TraceUtil.init(new JaegerTracingEngine.Builder().withCacheDuration(Duration.ofDays(1)).withCacheMaxSize(10000).withSampleRate(1).withProcessName("StoreFront").withIp("192.168.0.4").build())
     }
 
     @Override
     HttpStatus add(
             @NotBlank String topic,
             @NotBlank String poster,
-            @NotBlank String content) {
-        Comment c = commentRepository.saveComment(
+            @NotBlank String content,
+            @Header("uber-trace-id") String traceid) {
+        Comment c = TraceUtil.instance().newProcess({commentRepository.saveComment(
                 topic, poster, content
-        )
+        )} as Supplier, "Add Comment", TraceUtil.instance().deserializeContext((Serializable) Collections.singletonMap("uber-trace-id", traceid)))
         if(c != null) {
             return HttpStatus.CREATED
         }
@@ -54,10 +61,11 @@ class CommentController implements CommentOperations<Comment> {
     HttpStatus addReply(
             @NotBlank Long id,
             @NotBlank String poster,
-            @NotBlank String content) {
-        Comment c = commentRepository.saveReply(
+            @NotBlank String content,
+            @Header("uber-trace-id") String traceid) {
+        Comment c = TraceUtil.instance().newProcess({commentRepository.saveReply(
                 id, poster, content
-        )
+        )} as Supplier, "Add Reply", TraceUtil.instance().deserializeContext((Serializable) Collections.singletonMap("uber-trace-id", traceid)))
         if(c != null) {
             return HttpStatus.CREATED
         }
@@ -65,12 +73,14 @@ class CommentController implements CommentOperations<Comment> {
     }
 
     @Override
-    List<Comment> list(String topic) {
-        return commentRepository.findComments(topic)
+    List<Comment> list(String topic,  @Header("uber-trace-id") String traceid) {
+        return TraceUtil.instance().newProcess({commentRepository.findComments(topic)} as Supplier, "List comments: " + topic, TraceUtil.instance().deserializeContext((Serializable) Collections.singletonMap("uber-trace-id", traceid)))
     }
 
     @Override
-    Map<String, Object> expand(Long id) {
-        return commentRepository.findCommentReplies(id)
+    Map<String, Object> expand(Long id,  @Header("uber-trace-id") String traceid) {
+        return TraceUtil.instance().newProcess({commentRepository.findCommentReplies(id)} as Supplier, "Expand Comment: " + id, TraceUtil.instance().deserializeContext((Serializable) Collections.singletonMap("uber-trace-id", traceid)))
     }
+
+
 }

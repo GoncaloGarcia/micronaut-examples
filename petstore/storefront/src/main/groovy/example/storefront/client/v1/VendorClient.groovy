@@ -17,6 +17,7 @@ package example.storefront.client.v1
 
 import example.api.v1.Vendor
 import example.api.v1.VendorOperations
+import io.micronaut.http.annotation.Header
 import io.reactivex.Single
 import io.micronaut.http.client.annotation.Client
 
@@ -27,5 +28,5 @@ import io.micronaut.http.client.annotation.Client
 @Client(id = "vendors", path = "/v1/vendors")
 interface VendorClient extends VendorOperations{
     @Override
-    Single<Vendor> save(String name)
+    Single<Vendor> save(String name, @Header("uber-trace-id") String traceid)
 }

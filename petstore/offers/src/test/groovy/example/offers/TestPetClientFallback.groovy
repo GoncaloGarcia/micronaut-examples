@@ -17,6 +17,8 @@ package example.offers
 
 import example.api.v1.Pet
 import example.offers.client.v1.PetClient
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.annotation.Header
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.micronaut.retry.annotation.Fallback

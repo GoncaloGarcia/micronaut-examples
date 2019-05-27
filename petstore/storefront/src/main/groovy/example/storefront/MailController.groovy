@@ -1,5 +1,6 @@
 package example.storefront
 
+import com.feedzai.commons.tracing.engine.TraceUtil
 import example.api.v1.HealthStatus
 import example.storefront.client.v1.MailClient
 import groovy.transform.CompileStatic
@@ -13,6 +14,7 @@ import io.micronaut.http.annotation.Post
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.function.Supplier
 
 @CompileStatic
 @Controller('/mail')
@@ -31,7 +33,10 @@ class MailController {
 
     @Post(uri = '/send', consumes = MediaType.APPLICATION_JSON)
     HttpResponse send(@Body('slug') String slug, @Body('email') String email) {
-        emailService.send(slug, email)
-        HttpResponse.ok()
+        TraceUtil.instance().addToTrace({
+            emailService.send(slug, email)
+            HttpResponse.ok()
+        } as Supplier, "Send Email")
+
     }
 }

@@ -16,6 +16,8 @@
 package example.pets;
 
 
+import com.feedzai.commons.tracing.engine.JaegerTracingEngine;
+import com.feedzai.commons.tracing.engine.TraceUtil;
 import io.micronaut.runtime.Micronaut;
 
 import javax.inject.Singleton;
@@ -27,6 +29,8 @@ import javax.inject.Singleton;
 import io.swagger.v3.oas.annotations.*;
 import io.swagger.v3.oas.annotations.info.*;
 import io.swagger.v3.oas.annotations.tags.*;
+
+import java.time.Duration;
 
 @OpenAPIDefinition(
     info = @Info(
@@ -44,6 +48,7 @@ import io.swagger.v3.oas.annotations.tags.*;
 public class Application {
 
     public static void main(String[] args) {
+        TraceUtil.init(new JaegerTracingEngine.Builder().withCacheDuration(Duration.ofDays(1)).withCacheMaxSize(10000).withSampleRate(1).withProcessName("Pets").withIp("192.168.0.4").build());
         Micronaut.run(Application.class);
     }
 }

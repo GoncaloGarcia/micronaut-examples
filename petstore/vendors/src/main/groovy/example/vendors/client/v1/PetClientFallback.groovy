@@ -17,6 +17,8 @@ package example.vendors.client.v1
 
 import example.api.v1.Pet
 import example.api.v1.PetOperations
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.annotation.Header
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.micronaut.http.annotation.Body
@@ -34,27 +36,27 @@ import javax.validation.Valid
 @Singleton
 class PetClientFallback implements PetOperations<Pet>{
     @Override
-    Single<List<Pet>> list() {
+    Single<List<Pet>> list(@Header("uber-trace-id") String traceid) {
         return Single.just([])
     }
 
     @Override
-    Single<List<Pet>> byVendor(String name) {
+    Single<List<Pet>> byVendor(String name, @Header("uber-trace-id") String traceid) {
         return Single.just([])
     }
 
     @Override
-    Maybe<Pet> random() {
+    Maybe<Pet> random(@Header("uber-trace-id") String traceid) {
         return Maybe.empty()
     }
 
     @Override
-    Maybe<Pet> find(String slug) {
+    Maybe<Pet> find(String slug, @Header("uber-trace-id") String traceid) {
         return Maybe.empty()
     }
 
     @Override
-    Single<Pet> save(@Valid @Body Pet pet) {
+    Single<Pet> save(@Valid @Body Pet pet, @Header("uber-trace-id") String traceid) {
         return Single.error(new RuntimeException("Cannot save pets at the moment. No available servers."))
     }
 }

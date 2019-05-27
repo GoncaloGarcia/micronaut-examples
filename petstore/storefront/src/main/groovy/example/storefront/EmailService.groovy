@@ -1,5 +1,6 @@
 package example.storefront
 
+import com.feedzai.commons.tracing.engine.TraceUtil
 import example.api.v1.Email
 import example.api.v1.Pet
 import example.storefront.client.v1.MailClient
@@ -21,7 +22,7 @@ class EmailService {
     }
 
     void send(String slug, String email) {
-        petClient.find(slug).toSingle().subscribe({Pet pet -> sendEmail(email, pet)}, {})
+        petClient.find(slug, ((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id")).toSingle().subscribe({ Pet pet -> sendEmail(email, pet)}, {})
     }
 
     void sendEmail(String email, Pet pet) {

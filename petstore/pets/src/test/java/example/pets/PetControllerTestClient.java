@@ -16,6 +16,8 @@
 package example.pets;
 
 import example.api.v1.PetOperations;
+import io.micronaut.http.HttpHeaders;
+import io.micronaut.http.annotation.Header;
 import io.micronaut.http.client.annotation.Client;
 import io.reactivex.Single;
 
@@ -28,5 +30,5 @@ import java.util.List;
 @Client("/${pets.api.version}/pets")
 interface PetControllerTestClient extends PetOperations<PetEntity> {
     @Override
-    Single<List<PetEntity>> byVendor(String name);
+    Single<List<PetEntity>> byVendor(String name, @Header("uber-trace-id") String traceid);
 }

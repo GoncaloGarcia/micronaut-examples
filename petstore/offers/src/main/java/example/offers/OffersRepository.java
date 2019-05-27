@@ -15,12 +15,15 @@
  */
 package example.offers;
 
+import com.feedzai.commons.tracing.engine.TraceUtil;
 import example.api.v1.Offer;
 import example.api.v1.Pet;
 import example.offers.client.v1.PetClient;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
+import io.micronaut.core.convert.ArgumentConversionContext;
+import io.micronaut.http.HttpHeaders;
 import io.reactivex.Flowable;
 import io.micronaut.core.convert.value.ConvertibleValues;
 import io.micronaut.validation.Validated;
@@ -29,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import javax.inject.Singleton;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -48,6 +52,34 @@ public class OffersRepository implements OffersOperations {
 
     private final PetClient petClient;
     private final StatefulRedisConnection<String, String> redisConnection;
+    HttpHeaders headers = new HttpHeaders() {
+        @Override
+        public List<String> getAll(CharSequence name) {
+            return Collections.emptyList();
+        }
+
+        @Nullable
+        @Override
+        public String get(CharSequence name) {
+            return "";
+        }
+
+        @Override
+        public Set<String> names() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Collection<List<String>> values() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public <T> Optional<T> get(CharSequence name, ArgumentConversionContext<T> conversionContext) {
+            return Optional.empty();
+        }
+    };
+
 
     public OffersRepository(PetClient petClient, StatefulRedisConnection<String, String> redisConnection) {
         this.petClient = petClient;
@@ -87,7 +119,7 @@ public class OffersRepository implements OffersOperations {
             String description) {
 
         return Mono.from(petClient.find(
-                slug
+                slug, ""
         ).toFlowable())
          .flatMap(petInstance -> {
              ZonedDateTime expiryDate = ZonedDateTime.now().plus(duration);
@@ -117,10 +149,10 @@ public class OffersRepository implements OffersOperations {
         }
 
         if(LOG.isInfoEnabled()) {
-            LOG.info("Creating Initial Offers for Pets: {}", petClient.list().blockingGet());
+            LOG.info("Creating Initial Offers for Pets: {}", petClient.list("").blockingGet());
 
         }
-        petClient.find("harry")
+        petClient.find("harry", "")
                 .doOnError(throwable -> {
                     if (LOG.isErrorEnabled()) {
                         LOG.error("No pet found: " + throwable.getMessage(), throwable);
@@ -142,7 +174,7 @@ public class OffersRepository implements OffersOperations {
                         }
                 );
 
-        petClient.find("malfoy")
+        petClient.find("malfoy", "")
                 .doOnError(throwable -> {
                     if (LOG.isErrorEnabled()) {
                         LOG.error("No pet found: " + throwable.getMessage(), throwable);
@@ -164,7 +196,7 @@ public class OffersRepository implements OffersOperations {
                         }
                 );
 
-        petClient.find("goyle")
+        petClient.find("goyle", "")
                 .doOnError(throwable -> {
                     if (LOG.isErrorEnabled()) {
                         LOG.error("No pet found: " + throwable.getMessage(), throwable);
@@ -199,6 +231,8 @@ public class OffersRepository implements OffersOperations {
     private Function<String, Mono<? extends Offer>> keyToOffer(RedisReactiveCommands<String, String> commands) {
         return key -> {
             Flux<KeyValue<String, String>> values = commands.hmget(key, "price", "description");
+            Map<String, String> headers = ((Map<String, String>) TraceUtil.instance().serializeContext());
+            String traceId = headers.get("uber-trace-id") != null ? headers.get("uber-trace-id") : "";
             Map<String, String> map = new HashMap<>(3);
             return values.reduce(map, (all, keyValue) -> {
                 all.put(keyValue.getKey(), keyValue.getValue());
@@ -207,8 +241,8 @@ public class OffersRepository implements OffersOperations {
                     .map(ConvertibleValues::of)
                     .flatMap(entries -> {
                         String description = entries.get("description", String.class).orElseThrow(() -> new IllegalStateException("No description"));
-                        BigDecimal price = entries.get("price", BigDecimal.class).orElseThrow(() -> new IllegalStateException("No price"));
-                        Flowable<Pet> findPetFlowable = petClient.find(key).toFlowable();
+                        BigDecimal price = entries.get("price", BigDecimal.class).orElseThrow(() -> new IllegalStateException("No  price"));
+                        Flowable<Pet> findPetFlowable = petClient.find(key, "").toFlowable();
                         return Mono.from(findPetFlowable).map(pet -> new Offer(pet, description, price));
                     });
         };

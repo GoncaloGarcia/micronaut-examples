@@ -37,6 +37,7 @@ subprojects { project ->
 
 
         dependencies {
+            compile "com.feedzai.commons.tracing:tracing-lib-jaeger:0.0.0"
             if(project.name != 'api' && !project.path.contains(':functions') && !project.path.contains(':frontend')) {
 
                 compile "io.micronaut:micronaut-discovery-client"
