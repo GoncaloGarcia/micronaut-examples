@@ -17,6 +17,7 @@ package example.api.v1;
 
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Header;
 import io.micronaut.http.annotation.Post;
 
 import javax.validation.constraints.NotBlank;
@@ -35,7 +36,7 @@ public interface CommentOperations<T extends Comment> {
      * @return The comments
      */
     @Get("/{topic}/comments")
-    List<T> list(String topic);
+    List<T> list(String topic, @Header("uber-trace-id") String traceid);
 
     /**
      * A map of comments and nested replies
@@ -44,7 +45,7 @@ public interface CommentOperations<T extends Comment> {
      * @return The comments
      */
     @Get("/comment/{id}")
-    Map<String, Object> expand(Long id);
+    Map<String, Object> expand(Long id, @Header("uber-trace-id") String traceid);
     /**
      * Add a new comment under a given topic
      * @param topic The topic
@@ -56,7 +57,8 @@ public interface CommentOperations<T extends Comment> {
     HttpStatus add(
             @NotBlank String topic,
             @NotBlank String poster,
-            @NotBlank String content);
+            @NotBlank String content,
+            @Header("uber-trace-id") String traceid);
 
     /**
      * Add a new comment under a given topic
@@ -69,5 +71,6 @@ public interface CommentOperations<T extends Comment> {
     HttpStatus addReply(
             @NotBlank Long id,
             @NotBlank String poster,
-            @NotBlank String content);
+            @NotBlank String content,
+            @Header("uber-trace-id") String traceid);
 }

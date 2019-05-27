@@ -1,5 +1,6 @@
 package example.mail;
 
+import com.feedzai.commons.tracing.engine.TraceUtil;
 import example.api.v1.Email;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
@@ -22,12 +23,14 @@ public class MailController {
 
     @Post("/send")
     public HttpResponse send(@Valid @Body Email email) {
-        log.info(email.toString());
-        if ( emailService == null ) {
-            log.warn("Email service not injected");
-            return HttpResponse.serverError();
-        }
-        emailService.send(email);
-        return HttpResponse.ok();
+        return TraceUtil.instance().addToTrace(() -> {
+            log.info(email.toString());
+            if (emailService == null) {
+                log.warn("Email service not injected");
+                return HttpResponse.serverError();
+            }
+            emailService.send(email);
+            return HttpResponse.ok();
+        }, "Send Email");
     }
 }

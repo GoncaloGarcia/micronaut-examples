@@ -1,5 +1,6 @@
 package example.storefront
 
+import com.feedzai.commons.tracing.engine.TraceUtil
 import example.api.v1.HealthStatus
 import example.storefront.client.v1.Comment
 import example.storefront.client.v1.CommentClient
@@ -13,10 +14,10 @@ import io.micronaut.http.annotation.Post
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.function.Supplier
 
 /**
- * @author zacharyklein
- * @since 1.0
+ * @author zacharyklein* @since 1.0
  */
 @Singleton
 @Controller("/comment")
@@ -36,21 +37,23 @@ class CommentController {
 
     @Get('/{topic}')
     List<Comment> topics(String topic) {
-        commentClient.list topic
+        TraceUtil.instance().newTrace({
+            commentClient.list topic, ((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id")
+        } as Supplier, "Topics")
     }
 
     @Get('/{topic}/{id}')
     Map<String, Object> thread(String topic, Long id) {
-        commentClient.expand id
+        TraceUtil.instance().newTrace({commentClient.expand id, ((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id")} as Supplier, "Thread: "+ topic)
     }
 
     @Post('/{topic}')
     HttpStatus addTopic(String topic, @Body Comment comment) {
-        commentClient.add topic, comment.poster, comment.content
+        TraceUtil.instance().newTrace({ commentClient.add topic, comment.poster, comment.content, ((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id")} as Supplier, "Add Topic: "+ topic)
     }
 
     @Post('/{topic}/{id}')
     HttpStatus addReply(String topic, Long id, @Body Comment comment) {
-        commentClient.addReply id, comment.poster, comment.content
+        TraceUtil.instance().newTrace({ commentClient.addReply id, comment.poster, comment.content, ((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id")} as Supplier, "Add Reply: "+ topic)
     }
 }

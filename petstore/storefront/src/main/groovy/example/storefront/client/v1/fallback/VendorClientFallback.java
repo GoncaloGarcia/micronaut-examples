@@ -18,6 +18,7 @@ package example.storefront.client.v1.fallback;
 import example.api.v1.Vendor;
 import example.api.v1.VendorOperations;
 import groovy.transform.CompileStatic;
+import io.micronaut.http.annotation.Header;
 import io.reactivex.Single;
 import io.micronaut.retry.annotation.Fallback;
 
@@ -32,17 +33,17 @@ import java.util.List;
 @CompileStatic
 public class VendorClientFallback implements VendorOperations {
     @Override
-    public Single<List<Vendor>> list() {
+    public Single<List<Vendor>> list(@Header("uber-trace-id") String traceid) {
         return Single.just(Collections.emptyList());
     }
 
     @Override
-    public Single<List<String>> names() {
+    public Single<List<String>> names(@Header("uber-trace-id") String traceid) {
         return Single.just(Collections.emptyList());
     }
 
     @Override
-    public Single<Vendor> save(String name) {
+    public Single<Vendor> save(String name, @Header("uber-trace-id") String traceid) {
         return Single.just(new Vendor(name));
     }
 }

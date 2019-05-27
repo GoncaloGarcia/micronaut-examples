@@ -15,6 +15,9 @@
  */
 package example.storefront
 
+import com.feedzai.commons.tracing.engine.JaegerTracingEngine
+import com.feedzai.commons.tracing.engine.SpanTraceContext
+import com.feedzai.commons.tracing.engine.TraceUtil
 import example.api.v1.Offer
 import example.api.v1.Pet
 import example.api.v1.Vendor
@@ -23,6 +26,9 @@ import example.storefront.client.v1.PetClient
 import example.storefront.client.v1.TweetClient
 import example.storefront.client.v1.VendorClient
 import io.micronaut.context.annotation.Parameter
+import io.micronaut.core.convert.DefaultConversionService
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.simple.SimpleHttpHeaders
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Single
@@ -37,11 +43,12 @@ import io.micronaut.http.client.RxStreamingHttpClient
 import io.micronaut.http.sse.Event
 
 import javax.inject.Singleton
+import java.time.Duration
+import java.util.function.Supplier
 
 /**
- * @author graemerocher
- * @since 1.0
-*/
+ * @author graemerocher* @since 1.0
+ */
 @Controller("/")
 class StoreController {
 
@@ -62,6 +69,7 @@ class StoreController {
         this.petClient = petClient
         this.commentClient = commentClient
         this.tweetClient = tweetClient
+        TraceUtil.init(new JaegerTracingEngine.Builder().withCacheDuration(Duration.ofDays(1)).withCacheMaxSize(10000).withSampleRate(1).withProcessName("StoreFront").withIp("192.168.0.4").build())
     }
 
     @Produces(MediaType.TEXT_HTML)
@@ -71,39 +79,53 @@ class StoreController {
     }
 
     @Get(uri = "/offers", produces = MediaType.TEXT_EVENT_STREAM)
-    Flowable<Event<Offer>> offers() {
-        offersClient.jsonStream(HttpRequest.GET('/v1/offers'), Offer).map({ offer ->
-            Event.of(offer)
-        })
+    Flowable<Event<Offer>> offers(HttpHeaders headers) {
+        HttpRequest request = HttpRequest.GET('/v1/offers')
+        TraceUtil.instance().newTrace({
+            ((Map<String, String>) TraceUtil.instance().serializeContext()).each { k, v -> request.headers.add(k, v) }
+            offersClient.jsonStream(request, Offer).map({ offer ->
+                Event.of(offer)
+            })
+        } as Supplier, "Offers")
     }
 
     @Get('/pets')
     Single<List<Pet>> pets() {
-        petClient.list()
-                .onErrorReturnItem(Collections.emptyList())
+        TraceUtil.instance().newTrace({
+            petClient.list(((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id"))
+                    .onErrorReturnItem(Collections.emptyList())
+        } as Supplier, "Pets")
     }
 
     @Get('/pets/{slug}')
     Maybe<Pet> showPet(@Parameter('slug') String slug) {
-        petClient.find slug
+        TraceUtil.instance().newTrace({ petClient.find(slug, ((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id")) } as Supplier, slug)
     }
 
     @Get('/pets/random')
     Maybe<Pet> randomPet() {
-        petClient.random()
+        TraceUtil.instance().newTrace({
+            petClient.random(((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id"))
+        } as Supplier, "Random Pet", )
     }
 
 
     @Get('/pets/vendor/{vendor}')
     Single<List<Pet>> petsForVendor(String vendor) {
-        petClient.byVendor(vendor)
-                .onErrorReturnItem(Collections.emptyList())
+        TraceUtil.instance().newTrace({
+            Map<String, String> headers = ((Map<String, String>) TraceUtil.instance().serializeContext())
+            petClient.byVendor(vendor, headers.get("uber-trace-id"))
+                    .onErrorReturnItem(Collections.emptyList())
+        } as Supplier, "Pets for Vendor: " + vendor)
     }
+
 
     @Get('/vendors')
     Single<List<Vendor>> vendors() {
-        vendorClient.list()
+        TraceUtil.instance().newTrace({
+            vendorClient.list(((Map<String, String>) TraceUtil.instance().serializeContext()).get("uber-trace-id"))
                     .onErrorReturnItem(Collections.emptyList())
+        } as Supplier, "Vendors", )
     }
 
 }

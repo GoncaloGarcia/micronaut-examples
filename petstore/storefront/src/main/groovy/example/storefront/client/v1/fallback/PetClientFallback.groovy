@@ -18,6 +18,8 @@ package example.storefront.client.v1.fallback
 import example.api.v1.Pet
 import example.api.v1.PetOperations
 import groovy.transform.CompileStatic
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.annotation.Header
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.micronaut.http.annotation.Body
@@ -33,27 +35,27 @@ import javax.validation.Valid
 @CompileStatic
 class PetClientFallback implements PetOperations<Pet> {
     @Override
-    Single<List<Pet>> list() {
+    Single<List<Pet>> list(@Header("uber-trace-id") String traceid) {
         return Single.just([] as List<Pet>)
     }
 
     @Override
-    Single<List<Pet>> byVendor(String name) {
-        return list()
+    Single<List<Pet>> byVendor(String name, @Header("uber-trace-id") String traceid) {
+        return list(traceid)
     }
 
     @Override
-    Maybe<Pet> random() {
+    Maybe<Pet> random(@Header("uber-trace-id") String traceid) {
         return Maybe.empty()
     }
 
     @Override
-    Maybe<Pet> find(String slug) {
+    Maybe<Pet> find(String slug, @Header("uber-trace-id") String traceid) {
         return Maybe.empty()
     }
 
     @Override
-    Single<Pet> save(@Valid @Body Pet pet) {
+    Single<Pet> save(@Valid @Body Pet pet, @Header("uber-trace-id") String traceid) {
         return Single.just(pet)
     }
 }

@@ -15,11 +15,17 @@
  */
 package example.offers;
 
+import com.feedzai.commons.tracing.api.TraceContext;
+import com.feedzai.commons.tracing.engine.JaegerTracingEngine;
+import com.feedzai.commons.tracing.engine.TraceUtil;
 import example.api.v1.Offer;
+import io.jaegertracing.internal.utils.Http;
 import io.micronaut.context.annotation.Value;
+import io.micronaut.http.HttpHeaders;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Header;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.validation.Validated;
 import reactor.core.publisher.Flux;
@@ -29,9 +35,12 @@ import javax.inject.Singleton;
 import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author graemerocher
@@ -48,35 +57,39 @@ public class OffersController implements OffersOperations {
     public OffersController(OffersRepository offersRepository, @Value("${offers.delay:3s}") Duration offerDelay) {
         this.offersRepository = offersRepository;
         this.offerDelay = offerDelay;
+        TraceUtil.init(new JaegerTracingEngine.Builder().withCacheDuration(Duration.ofDays(1)).withCacheMaxSize(10000).withSampleRate(1).withProcessName("Offers").withIp("192.168.0.4").build());
     }
 
     /**
      * A non-blocking infinite JSON stream of offers that change every 10 seconds
+     *
      * @return A {@link Flux} stream of JSON objects
      */
     @Get(uri = "/", produces = MediaType.APPLICATION_JSON_STREAM)
-    public Flux<Offer> current() {
-        return offersRepository
-                    .random()
-                    .repeat(100)
-                    .delayElements(offerDelay);
+    public Flux<Offer> current(HttpHeaders headers) {
+        TraceContext ctx = TraceUtil.instance().deserializeContext((Serializable) headers.asMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0))));
+        return TraceUtil.instance().newProcess(() -> offersRepository
+                .random()
+                .repeat(100)
+                .delayElements(offerDelay), "Currents Offer", ctx);
     }
 
     /**
      * A non-blocking infinite JSON stream of offers that change every 10 seconds
+     *
      * @return A {@link Flux} stream of JSON objects
      */
     @Get(uri = "/all")
-    public Mono<List<Offer>> all() {
-        return offersRepository.all();
+    public Mono<List<Offer>> all(HttpHeaders headers) {
+        return TraceUtil.instance().newProcess(() -> offersRepository.all(), "All Offers", TraceUtil.instance().deserializeContext((Serializable) headers.asMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
     }
 
     /**
      * Consumes JSON and saves a new offer
      *
-     * @param slug Pet's slug
-     * @param price The price of the offer
-     * @param duration The duration of the offer
+     * @param slug        Pet's slug
+     * @param price       The price of the offer
+     * @param duration    The duration of the offer
      * @param description The description of the offer
      * @return The offer or 404 if no pet exists for the offer
      */
@@ -86,9 +99,10 @@ public class OffersController implements OffersOperations {
             String slug,
             BigDecimal price,
             Duration duration,
-            String description) {
-        return offersRepository.save(
+            String description
+    ) {
+        return TraceUtil.instance().addToTrace(() -> offersRepository.save(
                 slug, price, duration, description
-        );
+        ), "Saving offer for: " + slug);
     }
 }

@@ -18,6 +18,8 @@ package example.pets;
 import com.mongodb.reactivestreams.client.MongoClient;
 import example.api.v1.Pet;
 import example.api.v1.PetType;
+import io.micronaut.core.convert.ArgumentConversionContext;
+import io.micronaut.http.HttpHeaders;
 import io.reactivex.Flowable;
 import org.junit.*;
 import io.micronaut.configuration.mongo.reactive.MongoSettings;
@@ -29,8 +31,12 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.runtime.server.EmbeddedServer;
 import org.junit.runners.MethodSorters;
 
+import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 /**
@@ -42,6 +48,33 @@ public class PetControllerTest {
 
 
     static EmbeddedServer embeddedServer;
+    HttpHeaders headers = new HttpHeaders() {
+        @Override
+        public List<String> getAll(CharSequence name) {
+            return Collections.emptyList();
+        }
+
+        @Nullable
+        @Override
+        public String get(CharSequence name) {
+            return "";
+        }
+
+        @Override
+        public Set<String> names() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Collection<List<String>> values() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public <T> Optional<T> get(CharSequence name, ArgumentConversionContext<T> conversionContext) {
+            return Optional.empty();
+        }
+    };
 
     @BeforeClass
     public static void setup() {
@@ -76,12 +109,12 @@ public class PetControllerTest {
         PetControllerTestClient client = embeddedServer.getApplicationContext().getBean(PetControllerTestClient.class);
 
         List<PetEntity> pets = client
-                            .list()
+                            .list("")
                             .blockingGet();
         assertEquals(0, pets.size());
 
         try {
-            client.save(new PetEntity("", "", "")).blockingGet();
+            client.save(new PetEntity("", "", ""), "").blockingGet();
             fail("Should have thrown a constraint violation");
         } catch (HttpClientResponseException e) {
             assertEquals(e.getStatus(), HttpStatus.BAD_REQUEST);
@@ -89,7 +122,7 @@ public class PetControllerTest {
 
         PetEntity entity = new PetEntity("Fred", "Harry","photo-1457914109735-ce8aba3b7a79.jpeg")
                 .type(PetType.CAT);
-        Pet harry = client.save(entity).blockingGet();
+        Pet harry = client.save(entity, "").blockingGet();
 
         assertNotNull(harry);
 
@@ -98,7 +131,7 @@ public class PetControllerTest {
         assertEquals(harry.getType(), entity.getType());
 
         pets = client
-                .list()
+                .list("")
                 .blockingGet();
         assertEquals(pets.size(), 1);
         assertEquals(pets.iterator().next().getName(), harry.getName());
@@ -112,10 +145,10 @@ public class PetControllerTest {
         PetEntity entity = new PetEntity("Fred", "Ron", "photo-1442605527737-ed62b867591f.jpeg")
                 .type(PetType.DOG);
 
-        Pet ron = client.save(entity).blockingGet();
+        Pet ron = client.save(entity, "").blockingGet();
 
         assertNotNull(ron);
 
-        assertEquals(1, client.byVendor("Fred").blockingGet().size());
+        assertEquals(1, client.byVendor("Fred", "").blockingGet().size());
     }
 }

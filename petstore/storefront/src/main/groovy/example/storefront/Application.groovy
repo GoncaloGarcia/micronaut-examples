@@ -48,17 +48,17 @@ class Application {
         def names = ["Fred", "Arthur", "Joe"]
         List<Flowable<Vendor>> saves = []
         for (name in names) {
-            saves.add(vendorClient.save(name).toFlowable().flatMap({ Vendor vendor ->
+            saves.add(vendorClient.save(name, "").toFlowable().flatMap({ Vendor vendor ->
                 List<Single<Pet>> operations = []
                 String vendorName = vendor.name
                 if (vendorName == 'Fred') {
-                    operations.add(petClient.save(new Pet(vendorName, "Harry", "photo-1457914109735-ce8aba3b7a79.jpeg").type(PetType.DOG)))
-                    operations.add(petClient.save(new Pet(vendorName, "Ron", "photo-1442605527737-ed62b867591f.jpeg").type(PetType.DOG)))
-                    operations.add(petClient.save(new Pet(vendorName, "Malfoy", "photo-1489911646836-b08d6ca60ffe.jpeg").type(PetType.CAT)))
+                    operations.add(petClient.save(new Pet(vendorName, "Harry", "photo-1457914109735-ce8aba3b7a79.jpeg").type(PetType.DOG), ""))
+                    operations.add(petClient.save(new Pet(vendorName, "Ron", "photo-1442605527737-ed62b867591f.jpeg").type(PetType.DOG),""))
+                    operations.add(petClient.save(new Pet(vendorName, "Malfoy", "photo-1489911646836-b08d6ca60ffe.jpeg").type(PetType.CAT), ""))
                 } else if (vendorName == 'Arthur') {
-                    operations.add(petClient.save(new Pet(vendorName, "Hermione", "photo-1446231855385-1d4b0f025248.jpeg").type(PetType.DOG)))
-                    operations.add(petClient.save(new Pet(vendorName, "Crabbe", "photo-1512616643169-0520ad604fc2.jpeg").type(PetType.CAT)))
-                    operations.add(petClient.save(new Pet(vendorName, "Goyle", "photo-1505481354248-2ba5d3b9338e.jpeg").type(PetType.CAT)))
+                    operations.add(petClient.save(new Pet(vendorName, "Hermione", "photo-1446231855385-1d4b0f025248.jpeg").type(PetType.DOG), ""))
+                    operations.add(petClient.save(new Pet(vendorName, "Crabbe", "photo-1512616643169-0520ad604fc2.jpeg").type(PetType.CAT), ""))
+                    operations.add(petClient.save(new Pet(vendorName, "Goyle", "photo-1505481354248-2ba5d3b9338e.jpeg").type(PetType.CAT), ""))
                 }
                 return Single.merge(operations)
             }) as Flowable<Vendor>)

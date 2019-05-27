@@ -15,6 +15,7 @@
  */
 package example.api.v1;
 
+import io.micronaut.http.annotation.Header;
 import io.reactivex.Single;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
@@ -28,11 +29,11 @@ import java.util.List;
 public interface VendorOperations {
 
     @Get("/")
-    Single<List<Vendor>> list();
+    Single<List<Vendor>> list(@Header("uber-trace-id") String traceid);
 
     @Get("/names")
-    Single<List<String>> names();
+    Single<List<String>> names(@Header("uber-trace-id") String traceid);
 
     @Post("/")
-    Single<Vendor> save(String name);
+    Single<Vendor> save(String name, @Header("uber-trace-id") String traceid);
 }

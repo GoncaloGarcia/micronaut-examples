@@ -16,6 +16,7 @@
 package example.vendors
 
 import example.api.v1.VendorOperations
+import io.micronaut.http.annotation.Header
 import io.reactivex.Single
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.client.annotation.Client
@@ -62,6 +63,6 @@ class VendorControllerSpec extends Specification {
     @Client('/${vendors.api.version}/vendors')
     static interface TestVendorOperations extends VendorOperations {
         @Override
-        Single<example.api.v1.Vendor> save(String name)
+        Single<example.api.v1.Vendor> save(String name, @Header("uber-trace-id") String traceid)
     }
 }

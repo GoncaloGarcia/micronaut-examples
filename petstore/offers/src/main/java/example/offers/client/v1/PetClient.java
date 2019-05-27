@@ -16,6 +16,8 @@
 package example.offers.client.v1;
 
 import example.api.v1.Pet;
+import io.micronaut.http.HttpHeaders;
+import io.micronaut.http.annotation.Header;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.micronaut.http.annotation.Get;
@@ -31,9 +33,9 @@ import java.util.List;
 public interface PetClient  {
 
     @Get("/{slug}")
-    Maybe<Pet> find(String slug);
+    Maybe<Pet> find(String slug, @Header("uber-trace-id") String traceid);
 
     @Get("/")
-    Single<List<Pet>> list();
+    Single<List<Pet>> list(@Header("uber-trace-id") String traceid);
 
 }
